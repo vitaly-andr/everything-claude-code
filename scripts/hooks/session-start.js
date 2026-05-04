@@ -228,12 +228,8 @@ function selectMatchingSession(sessions, cwd, currentProject) {
     return { session: projectMatch, content: projectMatchContent, matchReason: 'project' };
   }
 
-  // Fallback: most recent readable session (original behavior)
-  if (fallbackSession) {
-    return { session: fallbackSession, content: fallbackContent, matchReason: 'recency-fallback' };
-  }
-
-  log('[SessionStart] All session files were unreadable');
+  // No fallback: skip summary if no cwd/project match (prevents cross-project leak — see issue #1053 comment 4369128371)
+  log('[SessionStart] No session matched current worktree/project; skipping summary injection');
   return null;
 }
 

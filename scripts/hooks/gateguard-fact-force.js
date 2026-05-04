@@ -265,6 +265,11 @@ function isClaudeSettingsPath(filePath) {
   return /(^|\/)\.claude\/settings(?:\.[^/]+)?\.json$/.test(normalized);
 }
 
+function isMarkdownPath(filePath) {
+  const normalized = normalizeForMatch(filePath);
+  return /\.(md|mdx|markdown)$/.test(normalized);
+}
+
 function isReadOnlyGitIntrospection(command) {
   const trimmed = String(command || '').trim();
   if (!trimmed || /[\r\n;&|><`$()]/.test(trimmed)) {
@@ -319,6 +324,7 @@ function editGateMsg(filePath) {
     '2. List the public functions/classes affected by this change',
     '3. If this file reads/writes data files, show field names, structure, and date format (use redacted or synthetic values, not raw production data)',
     "4. Quote the user's current instruction verbatim",
+    "5. Did you discuss the approach with the user and get EXPLICIT approval BEFORE this change? Generic 'да'/'продолжай'/'ok' continues the previously-agreed plan — does NOT authorize new patches discovered mid-task. If no explicit approval — STOP, present diagnosis + 2+ options, wait for the user to pick.",
     '',
     'Present the facts, then retry the same operation.'
   ].join('\n');
@@ -335,6 +341,7 @@ function writeGateMsg(filePath) {
     '2. Confirm no existing file serves the same purpose (use Glob)',
     '3. If this file reads/writes data files, show field names, structure, and date format (use redacted or synthetic values, not raw production data)',
     "4. Quote the user's current instruction verbatim",
+    "5. Did you discuss the approach with the user and get EXPLICIT approval BEFORE this change? Generic 'да'/'продолжай'/'ok' continues the previously-agreed plan — does NOT authorize new patches discovered mid-task. If no explicit approval — STOP, present diagnosis + 2+ options, wait for the user to pick.",
     '',
     'Present the facts, then retry the same operation.'
   ].join('\n');
@@ -349,6 +356,7 @@ function destructiveBashMsg() {
     '1. List all files/data this command will modify or delete',
     '2. Write a one-line rollback procedure',
     "3. Quote the user's current instruction verbatim",
+    "4. Did you discuss this destructive command with the user and get EXPLICIT approval? Generic 'да'/'продолжай' does NOT authorize destruction. STOP and confirm.",
     '',
     'Present the facts, then retry the same operation.'
   ].join('\n');
@@ -362,6 +370,7 @@ function routineBashMsg() {
     '',
     '1. The current user request in one sentence',
     '2. What this specific command verifies or produces',
+    "3. Did you discuss the approach with the user and get EXPLICIT approval BEFORE this command? Generic 'да'/'продолжай' continues prior plan — does NOT authorize new directions discovered mid-task. If no — STOP, propose options, wait.",
     '',
     'Present the facts, then retry the same operation.'
   ].join('\n');
@@ -425,7 +434,7 @@ function run(rawInput) {
 
   if (toolName === 'Edit' || toolName === 'Write') {
     const filePath = toolInput.file_path || '';
-    if (!filePath || isClaudeSettingsPath(filePath)) {
+    if (!filePath || isClaudeSettingsPath(filePath) || isMarkdownPath(filePath)) {
       return rawInput; // allow
     }
 
@@ -443,7 +452,7 @@ function run(rawInput) {
     const edits = toolInput.edits || [];
     for (const edit of edits) {
       const filePath = edit.file_path || '';
-      if (filePath && !isClaudeSettingsPath(filePath) && !isChecked(filePath)) {
+      if (filePath && !isClaudeSettingsPath(filePath) && !isMarkdownPath(filePath) && !isChecked(filePath)) {
         if (!markChecked(filePath)) {
           return allowWithStateWarning();
         }
